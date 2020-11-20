@@ -1,0 +1,32 @@
+{
+  "name": "deploy-plus",
+  "version": "1.0.0",
+  "description": "一键自动化打包、部署前端代码服务",
+  "main": "lib/service.js",
+  "homepage": "https://github.com/chenchenwuai/deploy-plus",
+  "author": {
+    "name": "chenwuai"
+  },
+  "keywords": [
+    "deploy",
+    "auto"
+  ],
+  "bin": {
+    "deploy-plus": "bin/deploy-plus.js"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenchenwuai/deploy-plus"
+  },
+  "dependencies": {
+    "archiver": "^5.0.2",
+    "chalk": "^4.1.0",
+    "commander": "^6.1.0",
+    "inquirer": "^7.3.3",
+    "minimist": "^1.2.5",
+    "node-ssh": "^11.0.0",
+    "ora": "^5.1.0",
+    "prettier": "^2.1.1"
+  }
+}
