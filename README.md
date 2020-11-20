@@ -40,10 +40,6 @@ npx deploy-plus -v
 deploy-plus -h
 ```
 
-![](https://ae01.alicdn.com/kf/Ud0667faaa3ef44939c8c016eb8a1cc026.jpg)
-
-
-
 #### 2.2 初始化配置文件（在项目目录下）
 
 ```shell
@@ -51,9 +47,6 @@ deploy-plus init # 或者使用简写 deploy-plus i
 ```
 
 根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化配置只会生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
-
-![](https://ae01.alicdn.com/kf/Uf9bb311b13764e4aa25c51d57b52bdc2Z.jpg)
-
 
 
 #### 2.3 手动创建或修改配置文件
@@ -113,10 +106,7 @@ module.exports = {
 deploy-plus deploy --mode dev # 或者使用 deploy-plus d --mode dev
 ```
 
-输入 `Y` 确认后即可开始自动部署，看见如下提示说明部署完成
-
-![](https://ae01.alicdn.com/kf/U6c196c63cab242cd894371c6d0725d87Q.jpg)
-
+输入 `Y` 确认后即可开始自动部署
 
 
 #### 2.5 集群部署 （在项目目录下）
@@ -127,9 +117,7 @@ deploy-plus deploy --mode dev # 或者使用 deploy-plus d --mode dev
 deploy-plus deploy # 或者使用 deploy-plus d
 ```
 
-输入 `Y` 确认后即可开始自动部署，看见如下提示说明部署完成
-
-![](https://ae01.alicdn.com/kf/Ue11c75ee338844ac9f3668686879f988E.jpg)
+输入 `Y` 确认后即可开始自动部署
 
 
 
