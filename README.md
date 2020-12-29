@@ -46,7 +46,7 @@ deploy-plus -h
 deploy-plus init # 或者使用简写 deploy-plus i
 ```
 
-根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化配置只会生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
+根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化可根据选择的需要部署的环境生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
 
 
 #### 2.3 手动创建或修改配置文件
@@ -69,7 +69,7 @@ module.exports = {
     password: '123456', // 服务器登录密码
     distPath: 'dist', // 本地打包生成目录
     webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'）
-    isRemoveRemoteFile: true	// 是否删除远程文件（默认true）
+    isBackupRemoteFile: true	// 是否备份远程文件（默认true）
   },
   test: {
     // 环境对象
@@ -81,7 +81,7 @@ module.exports = {
     password: '123456', // 服务器登录密码
     distPath: 'dist', // 本地打包生成目录
     webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'）
-    isRemoveRemoteFile: true	// 是否删除远程文件（默认true）
+    isBackupRemoteFile: true
   },
   prod: {
     // 环境对象
@@ -93,7 +93,7 @@ module.exports = {
     password: '123456', // 服务器登录密码
     distPath: 'dist', // 本地打包生成目录
     webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'）
-    isRemoveRemoteFile: true	// 是否删除远程文件（默认true）
+    isBackupRemoteFile: true	
   }
 }
 ```
@@ -103,10 +103,19 @@ module.exports = {
 注意：命令后面需要加 `--mode` 环境对象 （如：`--mode dev`）
 
 ```shell
-deploy-plus deploy --mode dev # 或者使用 deploy-plus d --mode dev
+deploy-plus deploy --mode dev
+# 或者使用 deploy-plus d --mode dev
+# 或者使用 deploy-plus d -m dev
 ```
 
 输入 `Y` 确认后即可开始自动部署
+
+如果不需要再打包项目，可以使用 `-n` 或者 `--no-build` 命令参数,例如
+```shell
+deploy-plus deploy --mode dev --no-build
+# 或者使用 deploy-plus d --mode dev -n
+# 或者使用 deploy-plus d -m dev -n
+```
 
 
 #### 2.5 集群部署 （在项目目录下）
@@ -119,7 +128,7 @@ deploy-plus deploy # 或者使用 deploy-plus d
 
 输入 `Y` 确认后即可开始自动部署
 
-
+集群部署同样可使用 `-n` 参数
 
 #### 2.6 更新优化
 
