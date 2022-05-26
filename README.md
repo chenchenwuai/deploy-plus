@@ -46,6 +46,8 @@ deploy-plus -h
 deploy-plus init # 或者使用简写 deploy-plus i
 ```
 
+> 执行 `deploy-plus init -h` 获取使用帮助
+
 根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化可根据选择的需要部署的环境生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
 
 
@@ -101,6 +103,8 @@ module.exports = {
 #### 2.4 部署 （在项目目录下）
 
 注意：命令后面需要加 `--mode` 环境对象 （如：`--mode dev`）
+
+> 执行 `deploy-plus deploy -h` 获取使用帮助
 
 ```shell
 deploy-plus deploy --mode dev
