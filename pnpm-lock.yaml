@@ -6,6 +6,7 @@ specifiers:
   commander: ^6.1.0
   inquirer: ^7.3.3
   minimist: ^1.2.5
+  node-rsa: ^1.1.1
   node-ssh: ^11.0.0
   ora: ^5.1.0
   prettier: ^2.6.2
@@ -16,6 +17,7 @@ dependencies:
   commander: registry.npmmirror.com/commander/6.2.1
   inquirer: registry.npmmirror.com/inquirer/7.3.3
   minimist: registry.npmmirror.com/minimist/1.2.6
+  node-rsa: registry.npmmirror.com/node-rsa/1.1.1
   node-ssh: registry.npmmirror.com/node-ssh/11.1.1
   ora: registry.npmmirror.com/ora/5.4.1
   prettier: registry.npmmirror.com/prettier/2.6.2
@@ -512,6 +514,14 @@ packages:
     resolution: {integrity: sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/mute-stream/-/mute-stream-0.0.8.tgz}
     name: mute-stream
     version: 0.0.8
+    dev: false
+
+  registry.npmmirror.com/node-rsa/1.1.1:
+    resolution: {integrity: sha512-Jd4cvbJMryN21r5HgxQOpMEqv+ooke/korixNNK3mGqfGJmy0M77WDDzo/05969+OkMy3XW1UuZsSmW9KQm7Fw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/node-rsa/-/node-rsa-1.1.1.tgz}
+    name: node-rsa
+    version: 1.1.1
+    dependencies:
+      asn1: registry.npmmirror.com/asn1/0.2.6
     dev: false
 
   registry.npmmirror.com/node-ssh/11.1.1:
