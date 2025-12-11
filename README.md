@@ -56,6 +56,8 @@ deploy-plus i -fy
 
 根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化可根据选择的需要部署的环境生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
 
+> 提示：交互输入密码时会自动使用私钥加密，无需手动加密。
+
 如果生成文件时没有输入密码，或者没有默认密码，而后面又想设置密码时，请参考 `2.3节` 生成密码的加密字符串
 
 ### 2.3 `encrypt` 加解密密码操作
@@ -115,8 +117,9 @@ module.exports = {
     username: 'root', // 服务器登录用户名
     password: '', // 服务器登录密码
     distPath: 'dist', // 本地打包生成目录
-    webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'或'/aaa',至少两级目录）
-    isBackupRemoteFile: true	// 是否备份远程文件（默认true）
+    webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'或'/aaa',至少三级目录）
+    isBackupRemoteFile: true, // 是否备份远程文件（默认true）
+    isCompressBackup: true // 是否压缩备份文件（默认true）
   },
   test: {
     name: '测试环境',
@@ -127,7 +130,8 @@ module.exports = {
     password: '',
     distPath: 'dist',
     webDir: '/usr/local/nginx/html',
-    isBackupRemoteFile: true
+    isBackupRemoteFile: true,
+    isCompressBackup: true
   },
   prod: {
     name: '生产环境',
@@ -138,7 +142,8 @@ module.exports = {
     password: '',
     distPath: 'dist',
     webDir: '/usr/local/nginx/html',
-    isBackupRemoteFile: true	
+    isBackupRemoteFile: true,
+    isCompressBackup: true
   }
 }
 ```
@@ -195,7 +200,8 @@ module.exports = {
     password: 'xxxxxx', // 使用 deploy-plus e 123456 生成的加密字符串
     distPath: 'dist',
     webDir: '/var/www/my-vue-app',
-    isBackupRemoteFile: true
+    isBackupRemoteFile: true,
+    isCompressBackup: true
   },
   prod: {
     name: '生产环境',
@@ -206,7 +212,8 @@ module.exports = {
     password: 'xxxxxx',
     distPath: 'dist',
     webDir: '/var/www/my-vue-app',
-    isBackupRemoteFile: true
+    isBackupRemoteFile: true,
+    isCompressBackup: true
   }
 }
 ```
@@ -269,7 +276,8 @@ module.exports = {
     password: '', // 留空，使用密钥认证
     distPath: 'dist',
     webDir: '/var/www/html',
-    isBackupRemoteFile: false // 不备份远程文件
+    isBackupRemoteFile: false, // 不备份远程文件
+    isCompressBackup: false
   }
 }
 ```
@@ -298,13 +306,20 @@ deploy-plus d -by -m prod
 - 检查私钥文件路径是否存在
 
 ### Q: 部署失败提示 "webDir 配置不正确"
-- `webDir` 必须是至少两级的绝对路径，如 `/var/www/html`
-- 不能是 `/` 或 `/html` 这样的单级目录
+- `webDir` 必须是至少三级的绝对路径，如 `/var/www/html`
+- 不能是 `/` 或 `/var` 这样的少于三级的目录（安全限制）
 
 ### Q: 如何查看加密后的密码对应的原始密码？
 ```shell
 deploy-plus e -d 加密字符串
 ```
+
+### Q: 备份文件太大怎么办？
+- 设置 `isCompressBackup: true` 会将备份压缩为 `.tar.gz` 文件
+- 设置 `isBackupRemoteFile: false` 可以关闭备份功能
+
+### Q: 备份文件在哪里？
+- 备份文件位于 `webDir` 的同级目录，命名格式为 `{webDir}_backup_{YYYYMMDD_HHmmss}.tar.gz`
 
 最后如果大家觉得还不错挺好用的话，麻烦给个 Star 😜😜😜。
 
