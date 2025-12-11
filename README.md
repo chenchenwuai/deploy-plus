@@ -162,5 +162,149 @@ module.exports = {
 npm run deploy:dev
 ```
 
+## 3 使用示例
+
+### 3.1 Vue/React 项目部署示例
+
+假设你有一个 Vue 项目，需要部署到开发服务器和生产服务器。
+
+**第一步：安装并初始化**
+
+```shell
+# 在项目根目录下
+npm install deploy-plus --save-dev
+
+# 初始化配置文件（使用默认密码 123456）
+npx deploy-plus init -fy 123456
+```
+
+**第二步：修改配置文件 `.deploy.config.js`**
+
+```javascript
+module.exports = {
+  projectName: 'my-vue-app',
+  privateKey: '/Users/yourname/.ssh/id_rsa',
+  passphrase: '',
+  cluster: [],
+  dev: {
+    name: '开发环境',
+    script: 'npm run build:dev',
+    host: '192.168.1.100',
+    port: 22,
+    username: 'root',
+    password: 'xxxxxx', // 使用 deploy-plus e 123456 生成的加密字符串
+    distPath: 'dist',
+    webDir: '/var/www/my-vue-app',
+    isBackupRemoteFile: true
+  },
+  prod: {
+    name: '生产环境',
+    script: 'npm run build:prod',
+    host: '10.0.0.50',
+    port: 22,
+    username: 'deploy',
+    password: 'xxxxxx',
+    distPath: 'dist',
+    webDir: '/var/www/my-vue-app',
+    isBackupRemoteFile: true
+  }
+}
+```
+
+**第三步：执行部署**
+
+```shell
+# 部署到开发环境（不执行打包，适合已打包的情况）
+npx deploy-plus d
+
+# 部署到开发环境（先打包再部署）
+npx deploy-plus d -b
+
+# 部署到生产环境（先打包再部署，跳过确认提示）
+npx deploy-plus d -by -m prod
+```
+
+### 3.2 集群部署示例
+
+同时部署到多台服务器：
+
+```javascript
+// .deploy.config.js
+module.exports = {
+  projectName: 'my-app',
+  privateKey: '/Users/yourname/.ssh/id_rsa',
+  cluster: ['dev', 'test'], // 指定要同时部署的环境
+  dev: {
+    name: '开发服务器1',
+    host: '192.168.1.101',
+    // ... 其他配置
+  },
+  test: {
+    name: '开发服务器2', 
+    host: '192.168.1.102',
+    // ... 其他配置
+  }
+}
+```
+
+```shell
+# 执行集群部署（会依次部署到 dev 和 test）
+npx deploy-plus d -c -b
+```
+
+### 3.3 使用 SSH 密钥认证（免密码）
+
+如果服务器已配置 SSH 密钥认证，可以不设置密码：
+
+```javascript
+module.exports = {
+  projectName: 'my-app',
+  privateKey: '/Users/yourname/.ssh/id_rsa', // 确保此私钥已添加到服务器
+  passphrase: '', // 私钥密码，没有则留空
+  dev: {
+    name: '开发环境',
+    host: '192.168.1.100',
+    port: 22,
+    username: 'root',
+    password: '', // 留空，使用密钥认证
+    distPath: 'dist',
+    webDir: '/var/www/html',
+    isBackupRemoteFile: false // 不备份远程文件
+  }
+}
+```
+
+### 3.4 完整工作流示例
+
+```shell
+# 1. 初始化配置
+deploy-plus init
+
+# 2. 加密密码并填入配置
+deploy-plus encrypt your-server-password
+
+# 3. 部署前先测试配置（不打包，手动确认）
+deploy-plus d -m dev
+
+# 4. 正式部署（打包 + 部署 + 跳过确认）
+deploy-plus d -by -m prod
+```
+
+## 4 常见问题
+
+### Q: 部署失败提示 "ssh连接失败"
+- 检查服务器地址、端口、用户名是否正确
+- 检查密码是否正确加密
+- 检查私钥文件路径是否存在
+
+### Q: 部署失败提示 "webDir 配置不正确"
+- `webDir` 必须是至少两级的绝对路径，如 `/var/www/html`
+- 不能是 `/` 或 `/html` 这样的单级目录
+
+### Q: 如何查看加密后的密码对应的原始密码？
+```shell
+deploy-plus e -d 加密字符串
+```
+
 最后如果大家觉得还不错挺好用的话，麻烦给个 Star 😜😜😜。
 
