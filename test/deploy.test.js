@@ -11,7 +11,6 @@ const {
 	archiveFile,
 	removeLocalFile,
 	disconnectSSH,
-	DANGEROUS_PATTERNS,
 	MAX_BUFFER
 } = deploy._internal
 
@@ -112,21 +111,6 @@ describe('checkScriptSafety - 脚本安全检查', () => {
 		test('大小写不敏感', () => {
 			const result = checkScriptSafety('NPM run build')
 			expect(result.safe).toBe(true)
-		})
-	})
-})
-
-// ============================================
-// DANGEROUS_PATTERNS - 危险命令模式
-// ============================================
-describe('DANGEROUS_PATTERNS - 危险命令模式', () => {
-	test('应该有足够的危险模式', () => {
-		expect(DANGEROUS_PATTERNS.length).toBeGreaterThanOrEqual(10)
-	})
-
-	test('所有模式应该是正则表达式', () => {
-		DANGEROUS_PATTERNS.forEach(pattern => {
-			expect(pattern).toBeInstanceOf(RegExp)
 		})
 	})
 })
