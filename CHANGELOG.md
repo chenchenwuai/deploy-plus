@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/chenchenwuai/deploy-plus/compare/v1.3.0...v1.4.0) (2025-12-11)
+
+
+### Features
+
+* 增加备份压缩配置和密码自动加密功能 ([c7d50c5](https://github.com/chenchenwuai/deploy-plus/commit/c7d50c5a1108a242a956422928c65c14c7b89301))
+* 增强备份功能，添加安全删除和备份压缩选项 ([55b7cd2](https://github.com/chenchenwuai/deploy-plus/commit/55b7cd2e00fbf1772c51c1801198903ba9b8aaef))
+
 ## 1.3.0 (2025-12-11)
 
 
