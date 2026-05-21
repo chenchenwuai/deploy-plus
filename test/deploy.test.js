@@ -9,8 +9,12 @@ const {
 	createTaskList,
 	executeTaskList,
 	archiveFile,
+	unzipRemoteFile,
 	removeLocalFile,
 	disconnectSSH,
+	createRemotePaths,
+	execRemoteCommand,
+	shellQuote,
 	MAX_BUFFER
 } = deploy._internal
 
@@ -122,6 +126,58 @@ describe('MAX_BUFFER - 常量', () => {
 	test('应该是合理的缓冲区大小', () => {
 		expect(MAX_BUFFER).toBe(5000 * 1024)
 		expect(MAX_BUFFER).toBeGreaterThan(1024 * 1024) // 至少 1MB
+	})
+})
+
+// ============================================
+// 远程命令参数处理
+// ============================================
+describe('远程命令参数处理', () => {
+	test('shellQuote 应该正确转义单引号', () => {
+		expect(shellQuote('/var/www/app')).toBe("'/var/www/app'")
+		expect(shellQuote("/var/www/a'b")).toBe("'/var/www/a'\\''b'")
+	})
+
+	test('createRemotePaths 应该规范化安全路径', () => {
+		const paths = createRemotePaths({
+			webDir: '/var/www/app/',
+			distPath: 'dist'
+		})
+
+		expect(paths.webDir).toBe('/var/www/app')
+		expect(paths.remoteTar).toBe('/var/www/dist.tar')
+		expect(paths.backupName).toMatch(/^\/var\/www\/app_backup_/)
+		expect(paths.releaseDir).toMatch(/^\/var\/www\/app_release_/)
+	})
+
+	test('createRemotePaths 应该拒绝可能注入 shell 的路径', () => {
+		expect(() => createRemotePaths({
+			webDir: '/var/www/app;rm -rf /',
+			distPath: 'dist'
+		})).toThrow('webDir')
+
+		expect(() => createRemotePaths({
+			webDir: '/var/www/app',
+			distPath: 'dist;rm -rf /'
+		})).toThrow('distPath')
+
+		expect(() => createRemotePaths({
+			webDir: '/var/www/../app',
+			distPath: 'dist'
+		})).toThrow('路径穿越')
+	})
+
+	test('execRemoteCommand 应该在远程命令失败时抛错', async () => {
+		const ssh = {
+			execCommand: jest.fn().mockResolvedValue({
+				code: 1,
+				stderr: 'tar failed',
+				stdout: ''
+			})
+		}
+
+		await expect(execRemoteCommand(ssh, 'tar -xf dist.tar', '解压失败'))
+			.rejects.toThrow('解压失败: tar failed')
 	})
 })
 
@@ -421,6 +477,56 @@ describe('archiveFile - 文件压缩测试', () => {
 		const config = { distPath: 'nonexistent-dir-12345' }
 
 		await expect(archiveFile(config, 1)).rejects.toThrow('打包目录不存在')
+	})
+})
+
+// ============================================
+// unzipRemoteFile - 远程解压部署测试
+// ============================================
+describe('unzipRemoteFile - 远程解压部署测试', () => {
+	test('应该先解压到临时目录再替换目标目录，支持首次部署', async () => {
+		const ssh = {
+			execCommand: jest.fn().mockResolvedValue({ code: 0, stdout: '', stderr: '' })
+		}
+		const timestamp = new Date('2024-01-02T03:04:05')
+		const config = {
+			webDir: '/var/www/app',
+			distPath: 'dist',
+			isBackupRemoteFile: true,
+			isCompressBackup: false,
+			__timestamp: timestamp
+		}
+
+		await unzipRemoteFile(config, 1, ssh)
+
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(
+			1,
+			"rm -rf '/var/www/app_release_20240102_030405' && mkdir -p '/var/www/app_release_20240102_030405' && tar -xf '/var/www/dist.tar' -C '/var/www/app_release_20240102_030405'"
+		)
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(
+			2,
+			"mkdir -p '/var/www' && if [ -e '/var/www/app' ]; then mv '/var/www/app' '/var/www/app_backup_20240102_030405'; fi && mv '/var/www/app_release_20240102_030405' '/var/www/app'"
+		)
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(3, "rm -f '/var/www/dist.tar'")
+	})
+
+	test('远程解压失败时不应该替换目标目录', async () => {
+		const ssh = {
+			execCommand: jest.fn()
+				.mockResolvedValueOnce({ code: 2, stderr: 'bad archive', stdout: '' })
+		}
+		const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
+			throw new Error('process.exit called')
+		})
+
+		await expect(unzipRemoteFile({
+			webDir: '/var/www/app',
+			distPath: 'dist',
+			__timestamp: new Date('2024-01-02T03:04:05')
+		}, 1, ssh)).rejects.toThrow('process.exit called')
+
+		expect(ssh.execCommand).toHaveBeenCalledTimes(1)
+		mockExit.mockRestore()
 	})
 })
 
