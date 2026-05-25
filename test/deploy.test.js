@@ -1,6 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const childProcess = require('child_process')
+const inquirer = require('inquirer')
 const deploy = require('../lib/commands/deploy')
 
 const {
@@ -9,12 +11,16 @@ const {
 	createTaskList,
 	executeTaskList,
 	archiveFile,
+	connectSSH,
 	unzipRemoteFile,
 	removeLocalFile,
 	disconnectSSH,
+	execBuild,
+	uploadLocalFile,
 	createRemotePaths,
 	execRemoteCommand,
 	shellQuote,
+	runDeployTasks,
 	MAX_BUFFER
 } = deploy._internal
 
@@ -367,6 +373,61 @@ describe('createTaskList - 创建任务列表', () => {
 })
 
 // ============================================
+// execBuild - 本地构建命令
+// ============================================
+describe('execBuild - 本地构建命令', () => {
+	afterEach(() => {
+		jest.restoreAllMocks()
+	})
+
+	test('安全构建命令执行成功时应该通过', async () => {
+		const execSpy = jest.spyOn(childProcess, 'exec').mockImplementation((script, options, callback) => {
+			callback(null)
+		})
+
+		await expect(execBuild({ script: 'npm run build' }, 1)).resolves.toBeUndefined()
+
+		expect(execSpy).toHaveBeenCalledWith(
+			'npm run build',
+			expect.objectContaining({ cwd: process.cwd(), maxBuffer: MAX_BUFFER }),
+			expect.any(Function)
+		)
+	})
+
+	test('构建命令执行失败时应该抛错', async () => {
+		jest.spyOn(childProcess, 'exec').mockImplementation((script, options, callback) => {
+			callback(new Error('build failed'))
+		})
+
+		await expect(execBuild({ script: 'npm run build' }, 1))
+			.rejects.toThrow('build failed')
+	})
+
+	test('危险构建命令应该直接拒绝', async () => {
+		await expect(execBuild({ script: 'rm -rf /' }, 1))
+			.rejects.toThrow('脚本安全检查失败')
+	})
+
+	test('非常见命令确认取消时应该抛错', async () => {
+		jest.spyOn(inquirer, 'prompt').mockResolvedValue({ confirm: false })
+
+		await expect(execBuild({ script: './build.sh' }, 1))
+			.rejects.toThrow('用户取消执行')
+	})
+
+	test('非常见命令确认继续后应该执行', async () => {
+		jest.spyOn(inquirer, 'prompt').mockResolvedValue({ confirm: true })
+		const execSpy = jest.spyOn(childProcess, 'exec').mockImplementation((script, options, callback) => {
+			callback(null)
+		})
+
+		await expect(execBuild({ script: './build.sh' }, 1)).resolves.toBeUndefined()
+
+		expect(execSpy).toHaveBeenCalled()
+	})
+})
+
+// ============================================
 // executeTaskList - 执行任务列表
 // ============================================
 describe('executeTaskList - 执行任务列表', () => {
@@ -410,6 +471,177 @@ describe('executeTaskList - 执行任务列表', () => {
 		await executeTaskList([mockTask], config, mockSsh)
 
 		expect(mockTask).toHaveBeenCalledWith(config, 1, mockSsh)
+	})
+})
+
+// ============================================
+// runDeployTasks - 部署任务失败清理
+// ============================================
+describe('runDeployTasks - 部署任务失败清理', () => {
+	const originalCwd = process.cwd()
+	const distPath = 'deploy-plus-run-tasks-dist'
+	const testDir = path.join(os.tmpdir(), distPath)
+	const tarPath = path.join(os.tmpdir(), `${distPath}.tar`)
+
+	beforeEach(() => {
+		process.chdir(os.tmpdir())
+		if (!fs.existsSync(testDir)) {
+			fs.mkdirSync(testDir, { recursive: true })
+		}
+	})
+
+	afterEach(() => {
+		process.chdir(originalCwd)
+		if (fs.existsSync(tarPath)) {
+			fs.unlinkSync(tarPath)
+		}
+		if (fs.existsSync(testDir)) {
+			fs.rmSync(testDir, { recursive: true, force: true })
+		}
+	})
+
+	test('后续任务失败时应该删除已生成的本地 tar 并断开 ssh', async () => {
+		const config = {
+			distPath,
+			host: '127.0.0.1',
+			port: 22,
+			password: 'password',
+			passwordEncrypted: false
+		}
+		const ssh = {
+			connect: jest.fn().mockResolvedValue(),
+			dispose: jest.fn()
+		}
+		const failure = new Error('upload failed')
+		const failUpload = jest.fn(() => { throw failure })
+
+		fs.writeFileSync(path.join(testDir, 'index.html'), '<html></html>')
+
+		await expect(runDeployTasks([archiveFile, connectSSH, failUpload], config, ssh))
+			.rejects.toThrow('upload failed')
+
+		expect(fs.existsSync(tarPath)).toBe(false)
+		expect(ssh.dispose).toHaveBeenCalledTimes(1)
+	})
+
+	test('压缩前失败时不应该执行清理或断开', async () => {
+		const config = { distPath }
+		const ssh = { dispose: jest.fn() }
+		const failure = new Error('build failed')
+		const failBeforeArchive = jest.fn(() => { throw failure })
+
+		await expect(runDeployTasks([failBeforeArchive], config, ssh))
+			.rejects.toThrow('build failed')
+
+		expect(ssh.dispose).not.toHaveBeenCalled()
+	})
+
+})
+
+// ============================================
+// connectSSH - SSH 认证分支
+// ============================================
+describe('connectSSH - SSH 认证分支', () => {
+	afterEach(() => {
+		jest.restoreAllMocks()
+	})
+
+	test('没有密码和私钥时应该提示输入密码', async () => {
+		jest.spyOn(inquirer, 'prompt').mockResolvedValue({ password: 'typed-password' })
+		const config = { host: '127.0.0.1', port: 22 }
+		const ssh = { connect: jest.fn().mockResolvedValue() }
+
+		await expect(connectSSH(config, 1, ssh)).resolves.toBeUndefined()
+
+		expect(config.password).toBe('typed-password')
+		expect(config.privateKey).toBeUndefined()
+		expect(ssh.connect).toHaveBeenCalledWith(config)
+	})
+
+	test('明文密码配置应该直接连接', async () => {
+		const config = {
+			host: '127.0.0.1',
+			port: 22,
+			privateKey: '/missing-key',
+			password: 'plain-password',
+			passwordEncrypted: false
+		}
+		const ssh = { connect: jest.fn().mockResolvedValue() }
+
+		await expect(connectSSH(config, 1, ssh)).resolves.toBeUndefined()
+
+		expect(config.password).toBe('plain-password')
+	})
+
+	test('显式加密密码解密失败时应该抛错', async () => {
+		const config = {
+			host: '127.0.0.1',
+			port: 22,
+			privateKey: '/missing-key',
+			password: 'encrypted-password',
+			passwordEncrypted: true
+		}
+		const ssh = { connect: jest.fn().mockResolvedValue() }
+
+		await expect(connectSSH(config, 1, ssh)).rejects.toThrow('私钥文件不存在')
+		expect(ssh.connect).not.toHaveBeenCalled()
+	})
+
+	test('未显式加密密码解密失败时应该按明文连接', async () => {
+		const config = {
+			host: '127.0.0.1',
+			port: 22,
+			privateKey: '/missing-key',
+			password: 'fallback-password'
+		}
+		const ssh = { connect: jest.fn().mockResolvedValue() }
+
+		await expect(connectSSH(config, 1, ssh)).resolves.toBeUndefined()
+
+		expect(config.password).toBe('fallback-password')
+		expect(ssh.connect).toHaveBeenCalledWith(config)
+	})
+
+	test('ssh.connect 失败时应该抛错', async () => {
+		const config = {
+			host: '127.0.0.1',
+			port: 22,
+			password: 'password',
+			passwordEncrypted: false
+		}
+		const ssh = { connect: jest.fn().mockRejectedValue(new Error('connect failed')) }
+
+		await expect(connectSSH(config, 1, ssh)).rejects.toThrow('connect failed')
+	})
+})
+
+// ============================================
+// uploadLocalFile - 上传本地压缩文件
+// ============================================
+describe('uploadLocalFile - 上传本地压缩文件', () => {
+	test('应该上传到 webDir 的父目录', async () => {
+		const ssh = { putFile: jest.fn().mockResolvedValue() }
+
+		await expect(uploadLocalFile({
+			distPath: 'dist',
+			webDir: '/var/www/app'
+		}, 1, ssh)).resolves.toBeUndefined()
+
+		expect(ssh.putFile).toHaveBeenCalledWith(
+			path.join(process.cwd(), 'dist.tar'),
+			'/var/www/dist.tar',
+			null,
+			{ concurrency: 1 }
+		)
+	})
+
+	test('上传失败时应该抛错', async () => {
+		const ssh = { putFile: jest.fn().mockRejectedValue(new Error('upload failed')) }
+
+		await expect(uploadLocalFile({
+			distPath: 'dist',
+			webDir: '/var/www/app'
+		}, 1, ssh)).rejects.toThrow('upload failed')
 	})
 })
 
@@ -515,18 +747,74 @@ describe('unzipRemoteFile - 远程解压部署测试', () => {
 			execCommand: jest.fn()
 				.mockResolvedValueOnce({ code: 2, stderr: 'bad archive', stdout: '' })
 		}
-		const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
-			throw new Error('process.exit called')
-		})
-
 		await expect(unzipRemoteFile({
 			webDir: '/var/www/app',
 			distPath: 'dist',
 			__timestamp: new Date('2024-01-02T03:04:05')
-		}, 1, ssh)).rejects.toThrow('process.exit called')
+		}, 1, ssh)).rejects.toThrow('解压远程文件失败: bad archive')
 
 		expect(ssh.execCommand).toHaveBeenCalledTimes(1)
-		mockExit.mockRestore()
+	})
+
+	test('启用压缩备份时应该压缩并删除备份目录', async () => {
+		const ssh = {
+			execCommand: jest.fn().mockResolvedValue({ code: 0, stdout: '', stderr: '' })
+		}
+		const config = {
+			webDir: '/var/www/app',
+			distPath: 'dist',
+			isBackupRemoteFile: true,
+			isCompressBackup: true,
+			__timestamp: new Date('2024-01-02T03:04:05')
+		}
+
+		await unzipRemoteFile(config, 1, ssh)
+
+		expect(ssh.execCommand).toHaveBeenCalledTimes(5)
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(
+			4,
+			"if [ -e '/var/www/app_backup_20240102_030405' ]; then tar -czf '/var/www/app_backup_20240102_030405.tar.gz' -C '/var/www' 'app_backup_20240102_030405'; fi"
+		)
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(
+			5,
+			"rm -rf '/var/www/app_backup_20240102_030405'"
+		)
+	})
+
+	test('关闭备份时应该删除临时备份目录', async () => {
+		const ssh = {
+			execCommand: jest.fn().mockResolvedValue({ code: 0, stdout: '', stderr: '' })
+		}
+		const config = {
+			webDir: '/var/www/app',
+			distPath: 'dist',
+			isBackupRemoteFile: false,
+			__timestamp: new Date('2024-01-02T03:04:05')
+		}
+
+		await unzipRemoteFile(config, 1, ssh)
+
+		expect(ssh.execCommand).toHaveBeenCalledTimes(4)
+		expect(ssh.execCommand).toHaveBeenNthCalledWith(
+			4,
+			"rm -rf '/var/www/app_backup_20240102_030405'"
+		)
+	})
+
+	test('备份目录不满足安全删除规则时应该跳过删除', async () => {
+		const ssh = {
+			execCommand: jest.fn().mockResolvedValue({ code: 0, stdout: '', stderr: '' })
+		}
+		const config = {
+			webDir: '/aa/app',
+			distPath: 'dist',
+			isBackupRemoteFile: false,
+			__timestamp: new Date('2024-01-02T03:04:05')
+		}
+
+		await unzipRemoteFile(config, 1, ssh)
+
+		expect(ssh.execCommand).toHaveBeenCalledTimes(3)
 	})
 })
 
