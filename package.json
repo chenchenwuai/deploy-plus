@@ -16,8 +16,16 @@
   "bin": {
     "deploy-plus": "bin/deploy-plus.js"
   },
+  "files": [
+    "bin",
+    "lib",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "lint": "eslint --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "release": "standard-version"
@@ -28,13 +36,13 @@
     "url": "git+https://github.com/chenchenwuai/deploy-plus"
   },
   "dependencies": {
-    "archiver": "^5.0.2",
+    "archiver": "^6.0.2",
     "chalk": "^4.1.0",
     "commander": "^6.1.0",
-    "inquirer": "^7.3.3",
-    "minimist": "^1.2.5",
+    "inquirer": "^8.2.7",
+    "minimist": "^1.2.8",
     "node-rsa": "^1.1.1",
-    "node-ssh": "^11.0.0",
+    "node-ssh": "^13.2.1",
     "ora": "^5.1.0",
     "prettier": "^2.6.2"
   },
@@ -44,5 +52,10 @@
     "eslint-plugin-import": "^2.25.2",
     "jest": "^29.7.0",
     "standard-version": "^9.5.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "lodash": "^4.18.1"
+    }
   }
 }

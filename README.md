@@ -54,7 +54,7 @@ deploy-plus i -fy
 + `-f` `--force` 强制重新生成配置文件
 + `-y` `--yes` 全部设置为默认值, 如果后面跟字符串会被当作默认密码,例如: `deploy-plus i -y my-password`
 
-根据提示填写内容，会在项目根目录下生成 `deploy.config.js` 文件，初始化可根据选择的需要部署的环境生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
+根据提示填写内容，会在项目根目录下生成 `.deploy.config.js` 文件，初始化可根据选择的需要部署的环境生成 `dev` (开发环境)、`test` (测试环境)、`prod` (生产环境) 三个配置，再有其他配置可参考模板自行配置。
 
 > 提示：交互输入密码时会自动使用私钥加密，无需手动加密。
 
@@ -75,8 +75,6 @@ deploy-plus e 123456
 + 解密
 ```shell
 # 解密
-deploy-plus e decrypt xxxxx
-# 或者使用简写
 deploy-plus e -d xxxxx
 ```
 `xxxxx` 为加密密码生成的字符串
@@ -116,6 +114,7 @@ module.exports = {
     port: 22, // 服务器端口号
     username: 'root', // 服务器登录用户名
     password: '', // 服务器登录密码
+    passwordEncrypted: false, // password 是否为 deploy-plus 加密后的密文
     distPath: 'dist', // 本地打包生成目录
     webDir: '/usr/local/nginx/html', // 服务器部署路径（不可为空或'/'或'/aaa',至少三级目录）
     isBackupRemoteFile: true, // 是否备份远程文件（默认true）
@@ -128,6 +127,7 @@ module.exports = {
     port: 22, 
     username: 'root',
     password: '',
+    passwordEncrypted: false,
     distPath: 'dist',
     webDir: '/usr/local/nginx/html',
     isBackupRemoteFile: true,
@@ -140,6 +140,7 @@ module.exports = {
     port: 22,
     username: 'root',
     password: '',
+    passwordEncrypted: false,
     distPath: 'dist',
     webDir: '/usr/local/nginx/html',
     isBackupRemoteFile: true,
@@ -198,6 +199,7 @@ module.exports = {
     port: 22,
     username: 'root',
     password: 'xxxxxx', // 使用 deploy-plus e 123456 生成的加密字符串
+    passwordEncrypted: true,
     distPath: 'dist',
     webDir: '/var/www/my-vue-app',
     isBackupRemoteFile: true,
@@ -210,6 +212,7 @@ module.exports = {
     port: 22,
     username: 'deploy',
     password: 'xxxxxx',
+    passwordEncrypted: true,
     distPath: 'dist',
     webDir: '/var/www/my-vue-app',
     isBackupRemoteFile: true,
@@ -274,6 +277,7 @@ module.exports = {
     port: 22,
     username: 'root',
     password: '', // 留空，使用密钥认证
+    passwordEncrypted: false,
     distPath: 'dist',
     webDir: '/var/www/html',
     isBackupRemoteFile: false, // 不备份远程文件
@@ -322,4 +326,3 @@ deploy-plus e -d 加密字符串
 - 备份文件位于 `webDir` 的同级目录，命名格式为 `{webDir}_backup_{YYYYMMDD_HHmmss}.tar.gz`
 
 最后如果大家觉得还不错挺好用的话，麻烦给个 Star 😜😜😜。
-
