@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.2](https://github.com/chenchenwuai/deploy-plus/compare/v1.4.1...v1.4.2) (2026-06-01)
+
+
+### Bug Fixes
+
+* preserve password deploy compatibility ([1c75a59](https://github.com/chenchenwuai/deploy-plus/commit/1c75a59d173fb1b4f87a5293903e78580e75ab3b))
+
 ### [1.4.1](https://github.com/chenchenwuai/deploy-plus/compare/v1.4.0...v1.4.1) (2026-06-01)
 
 
