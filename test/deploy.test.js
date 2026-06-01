@@ -571,6 +571,8 @@ describe('connectSSH - SSH 认证分支', () => {
 		await expect(connectSSH(config, 1, ssh)).resolves.toBeUndefined()
 
 		expect(config.password).toBe('plain-password')
+		expect(config.privateKey).toBeUndefined()
+		expect(ssh.connect).toHaveBeenCalledWith(config)
 	})
 
 	test('显式加密密码解密失败时应该抛错', async () => {
@@ -599,6 +601,7 @@ describe('connectSSH - SSH 认证分支', () => {
 		await expect(connectSSH(config, 1, ssh)).resolves.toBeUndefined()
 
 		expect(config.password).toBe('fallback-password')
+		expect(config.privateKey).toBeUndefined()
 		expect(ssh.connect).toHaveBeenCalledWith(config)
 	})
 

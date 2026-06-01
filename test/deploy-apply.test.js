@@ -67,7 +67,8 @@ const loadDeployApplyWithMocks = ({
 	}
 
 	jest.doMock('../lib/config', () => ({
-		deployConfigPath: testConfigPath
+		deployConfigPath: testConfigPath,
+		packageInfo: { version: '1.4.1' }
 	}))
 	jest.doMock('../lib/utils', () => utils)
 	jest.doMock('node-ssh', () => ({ NodeSSH }))
@@ -113,6 +114,27 @@ describe('deploy.apply - CLI 入口流程', () => {
 		await expect(deploy.apply('prod', false, false, true)).rejects.toThrow('process.exit 1')
 
 		expect(utils.error).toHaveBeenCalledWith('prod 环境配置不存在')
+	})
+
+	test('新版配置缺少 passwordEncrypted 时应该提示升级', async () => {
+		mockProcessExit()
+		const config = {
+			projectName: 'deploy-plus-test',
+			deployPlusVersion: '1.4.2',
+			privateKey: '/Users/xxcc/.ssh/id_rsa',
+			passphrase: '',
+			cluster: [],
+			dev: {
+				...baseEnvConfig
+			}
+		}
+		delete config.dev.passwordEncrypted
+		const { deploy, utils, NodeSSH } = loadDeployApplyWithMocks({ config })
+
+		await expect(deploy.apply('dev', false, false, true)).rejects.toThrow('process.exit 1')
+
+		expect(utils.error).toHaveBeenCalledWith('配置版本 1.4.2 与当前 deploy-plus 1.4.1 不一致，请先升级 deploy-plus')
+		expect(NodeSSH).not.toHaveBeenCalled()
 	})
 
 	test('用户取消确认时应该退出且不创建 SSH 连接', async () => {

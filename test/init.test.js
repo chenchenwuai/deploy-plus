@@ -5,6 +5,7 @@ const path = require('path')
 const testConfigPath = path.join(os.tmpdir(), `deploy-plus-init-test-${process.pid}.config.js`)
 
 const createDefaultInfo = () => ({
+	deployPlusVersion: '1.4.1',
 	projectName: 'deploy-plus-test',
 	privateKey: '/tmp/test-key',
 	passphrase: '',
@@ -43,6 +44,7 @@ const loadInitWithMocks = ({
 	}
 	const config = {
 		defaultInfo: createDefaultInfo(),
+		packageInfo: { name: 'deploy-plus', version: '1.4.1' },
 		inquirerConfig: [{ name: 'projectName' }],
 		deployConfigPath: testConfigPath,
 		deployConfigFileName: '.deploy.config.js'
@@ -106,6 +108,7 @@ describe('init - 配置初始化测试', () => {
 		test('应该导出 defaultInfo 默认配置', () => {
 			const { defaultInfo } = config
 			expect(defaultInfo).toBeDefined()
+			expect(defaultInfo.deployPlusVersion).toBe(config.packageInfo.version)
 			expect(defaultInfo.privateKey).toContain('.ssh/id_rsa')
 			expect(defaultInfo.dev).toBeDefined()
 			expect(defaultInfo.dev.port).toBe(22)
@@ -156,6 +159,7 @@ describe('init - 配置初始化测试', () => {
 			await expect(init.apply(false, true, 'secret')).rejects.toThrow('process.exit 0')
 
 			const generatedConfig = readGeneratedConfig()
+			expect(generatedConfig.deployPlusVersion).toBe('1.4.1')
 			expect(generatedConfig.dev.password).toBe('encrypted-secret')
 			expect(generatedConfig.dev.passwordEncrypted).toBe(true)
 			expect(utils.rsaEncrypt).toHaveBeenCalledWith('secret', '/tmp/test-key')
@@ -220,6 +224,7 @@ describe('init - 配置初始化测试', () => {
 			const generatedConfig = readGeneratedConfig()
 			expect(inquirer.prompt).toHaveBeenCalled()
 			expect(generatedConfig.projectName).toBe('interactive-project')
+			expect(generatedConfig.deployPlusVersion).toBe('1.4.1')
 			expect(generatedConfig.dev.password).toBe('encrypted-dev-password')
 			expect(generatedConfig.dev.passwordEncrypted).toBe(true)
 			expect(generatedConfig.dev.isCompressBackup).toBe(true)
